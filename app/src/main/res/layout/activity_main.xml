@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:chart="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#f4f7fc"
+    android:padding="16dp">
+
+    <!-- Title / Header -->
+    <TextView
+        android:id="@+id/titleText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="스마트 홈 컨트롤 프로그램"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#333"
+        android:gravity="center"
+        android:padding="8dp" />
+
+    <!-- Chart Container -->
+    <com.github.mikephil.charting.charts.LineChart
+        android:id="@+id/lineChart"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:layout_margin="8dp" />
+
+    <!-- Actuator Toggles -->
+    <LinearLayout
+        android:id="@+id/toggleLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="8dp">
+
+        <ToggleButton
+            android:id="@+id/toggleAC"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textOff="에어컨 OFF"
+            android:textOn="에어컨 ON" />
+
+        <ToggleButton
+            android:id="@+id/toggleLight"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textOff="거실등 OFF"
+            android:textOn="거실등 ON"
+            android:layout_marginStart="16dp"
+            />
+
+        <ToggleButton
+            android:id="@+id/toggleLock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textOff="문 잠금해제"
+            android:textOn="문 잠금"
+            android:layout_marginStart="16dp"
+            />
+
+        <ToggleButton
+            android:id="@+id/toggleBoiler"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textOff="보일러 OFF"
+            android:textOn="보일러 ON"
+            android:layout_marginStart="16dp"
+            />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/temp_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Temperature (°C)"
+        android:textSize="16sp" />
+
+    <SeekBar
+        android:id="@+id/tempSeekBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="40"
+        android:progress="25"
+        android:progressDrawable="@drawable/seekbar_progress" />
+
+    <!-- Humidity SeekBar -->
+    <TextView
+        android:id="@+id/humidity_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Humidity (%)"
+        android:textSize="16sp" />
+
+    <SeekBar
+        android:id="@+id/humSeekBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="100"
+        android:progress="50"
+        android:progressDrawable="@drawable/seekbar_progress" />
+
+
+
+    <!-- Current Status Panel -->
+    <TextView
+        android:id="@+id/statusTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="현재 상태"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#555"
+        android:layout_marginTop="16dp"
+        />
+
+    <LinearLayout
+        android:id="@+id/statusLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="8dp">
+
+        <TextView
+            android:id="@+id/statusAC"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="에어컨: OFF" />
+
+        <TextView
+            android:id="@+id/statusLight"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="거실등: OFF" />
+
+        <TextView
+            android:id="@+id/statusLock"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="현관문: LOCKED" />
+
+        <TextView
+            android:id="@+id/statusBoiler"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="보일러: OFF" />
+
+    </LinearLayout>
+
+    <!-- Footer -->
+    <TextView
+        android:id="@+id/footerText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="© 2025 Smart Environment Control System"
+        android:textColor="#FFF"
+        android:background="#343a40"
+        android:gravity="center"
+        android:padding="16dp"
+        android:layout_marginTop="16dp"/>
+</LinearLayout>
