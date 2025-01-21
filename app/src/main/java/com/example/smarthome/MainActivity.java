@@ -5,6 +5,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.ToggleButton;
@@ -42,12 +44,14 @@ public class MainActivity extends AppCompatActivity {
 
     private LineChart lineChart;
     private ToggleButton toggleAC, toggleLight, toggleLock, toggleBoiler;
+    private Button  buttonNormal, buttonCinema, buttonMilitary;
     private TextView statusAC, statusLight, statusLock, statusBoiler;
 
-    private SeekBar tempSeekBar, humSeekBar;
+    private SeekBar tempSeekBar, humSeekBar, brightSeekBar;
     private LimitLine tempLimitLine, humLimitLine;
     private float desiredTemp = 25f;  // Default value for temperature
     private float desiredHum = 50f;   // Default value for humidity
+    private float desiredBright = 100f; // Default value for brightness
 
     private Handler handler = new Handler(); // Declare a handler for posting tasks
     private Runnable fetchStatusRunnable; // Declare a runnable to hold the fetch status logic
@@ -93,22 +97,27 @@ public class MainActivity extends AppCompatActivity {
         public Integer heater_led;
         public Integer fan;
         public Integer servo_motor;
+        public Integer main_led_mode;
 
-        public ActuatorUpdateBody(Integer main_led, Integer heater_led, Integer fan, Integer servo_motor) {
+        public ActuatorUpdateBody(Integer main_led, Integer heater_led, Integer fan, Integer servo_motor, Integer main_led_mode) {
             this.main_led = main_led;
             this.heater_led = heater_led;
             this.fan = fan;
             this.servo_motor = servo_motor;
+            this.main_led_mode = main_led_mode;
         }
     }
 
     public static class SensorChoiceBody {
         public Float temperature_choice;
         public Float humidity_choice;
+        public Float brightness_choice;
 
-        public SensorChoiceBody(Float temperature_choice, Float humidity_choice) {
+        public SensorChoiceBody(Float temperature_choice, Float humidity_choice, Float brightness_choice) {
+
             this.temperature_choice = temperature_choice;
             this.humidity_choice = humidity_choice;
+            this.brightness_choice = brightness_choice;
         }
     }
 
@@ -155,6 +164,29 @@ public class MainActivity extends AppCompatActivity {
             updateActuator("heater_led", isChecked ? 1 : 0);
         });
 
+        // Set onClickListener for each button
+        buttonNormal.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Handle buttonNormal click
+                updateActuator("main_led_mode", 0);
+            }
+        });
+
+        buttonCinema.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Handle buttonCinema click
+                updateActuator("main_led_mode", 1);            }
+        });
+
+        buttonMilitary.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Handle buttonMilitary click
+                updateActuator("main_led_mode", 2);            }
+        });
+
 
         // Set up SeekBars
         tempSeekBar.setMax(40); // Max temperature = 40°C
@@ -164,7 +196,7 @@ public class MainActivity extends AppCompatActivity {
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 desiredTemp = progress;
                 updateLimitLine(desiredTemp, true);
-                updateSensorChoice(desiredTemp, desiredHum); // Update both values
+                updateSensorChoice(desiredTemp, desiredHum, desiredBright); // Update both values
             }
 
             @Override
@@ -181,7 +213,23 @@ public class MainActivity extends AppCompatActivity {
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 desiredHum = progress;
                 updateLimitLine(desiredHum, false);
-                updateSensorChoice(desiredTemp, desiredHum); // Update both values
+                updateSensorChoice(desiredTemp, desiredHum, desiredBright); // Update both values
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        brightSeekBar.setMax(100); // Max humidity = 100%
+        brightSeekBar.setProgress((int) desiredBright); // Set initial progress
+        brightSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                desiredBright = progress;
+                updateSensorChoice(desiredTemp, desiredHum, desiredBright); // Update both values
             }
 
             @Override
@@ -221,6 +269,11 @@ public class MainActivity extends AppCompatActivity {
 
         tempSeekBar = findViewById(R.id.tempSeekBar);
         humSeekBar = findViewById(R.id.humSeekBar);
+        brightSeekBar = findViewById(R.id.brightSeekBar);
+
+        buttonNormal = findViewById(R.id.buttonNormal);
+        buttonCinema = findViewById(R.id.buttonCinema);
+        buttonMilitary = findViewById(R.id.buttonMilitary);
     }
 
     private void setupChart() {
@@ -365,7 +418,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateActuator(String field, int value) {
-        ActuatorUpdateBody body = new ActuatorUpdateBody(null, null, null, null);
+        ActuatorUpdateBody body = new ActuatorUpdateBody(null, null, null, null, null);
         switch(field) {
             case "main_led":
                 body.main_led = value;
@@ -378,6 +431,9 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case "servo_motor":
                 body.servo_motor = value;
+                break;
+            case "main_led_mode":
+                body.main_led_mode= value;
                 break;
         }
 
@@ -399,8 +455,8 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void updateSensorChoice(Float temp, Float hum) {
-        SensorChoiceBody body = new SensorChoiceBody(temp, hum);
+    private void updateSensorChoice(Float temp, Float hum, Float bright) {
+        SensorChoiceBody body = new SensorChoiceBody(temp, hum, bright);
         Call<GenericResponse> call = apiService.updateSensorChoice(body);
         call.enqueue(new Callback<GenericResponse>() {
             @Override
