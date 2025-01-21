@@ -40,34 +40,34 @@
             android:id="@+id/toggleAC"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textOff="에어컨 OFF"
-            android:textOn="에어컨 ON" />
+            android:textOff="에어컨 \nON/OFF"
+            android:textOn="에어컨 \nON/OFF" />
 
         <ToggleButton
             android:id="@+id/toggleLight"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textOff="거실등 OFF"
-            android:textOn="거실등 ON"
-            android:layout_marginStart="16dp"
+            android:textOff="거실등 \nON/OFF"
+            android:textOn="거실등 \nON/OFF"
+            android:layout_marginStart="10dp"
             />
 
         <ToggleButton
             android:id="@+id/toggleLock"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textOff="문 잠금해제"
-            android:textOn="문 잠금"
-            android:layout_marginStart="16dp"
+            android:textOff="문 잠금\n/잠금 해제"
+            android:textOn="문 잠금\n/잠금 해제"
+            android:layout_marginStart="10dp"
             />
 
         <ToggleButton
             android:id="@+id/toggleBoiler"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textOff="보일러 OFF"
-            android:textOn="보일러 ON"
-            android:layout_marginStart="16dp"
+            android:textOff="보일러 \nON/OFF"
+            android:textOn="보일러 \nON/OFF"
+            android:layout_marginStart="10dp"
             />
     </LinearLayout>
 

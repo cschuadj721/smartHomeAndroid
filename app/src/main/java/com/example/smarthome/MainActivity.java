@@ -3,6 +3,7 @@ package com.example.smarthome;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -47,6 +48,9 @@ public class MainActivity extends AppCompatActivity {
     private LimitLine tempLimitLine, humLimitLine;
     private float desiredTemp = 25f;  // Default value for temperature
     private float desiredHum = 50f;   // Default value for humidity
+
+    private Handler handler = new Handler(); // Declare a handler for posting tasks
+    private Runnable fetchStatusRunnable; // Declare a runnable to hold the fetch status logic
 
 
     // We’ll create a basic interface for our REST endpoints (similar to Django endpoints):
@@ -134,7 +138,8 @@ public class MainActivity extends AppCompatActivity {
 
         setupChart();          // Initialize chart styling
         fetchSensorData();     // Load initial graph data
-        fetchActuatorStatus(); // Load current actuator status
+        startPeriodicFetch();
+//        fetchActuatorStatus(); // Load current actuator status
 
         // Set toggle listeners
         toggleAC.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -185,6 +190,20 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {}
         });
+    }
+
+    private void startPeriodicFetch() {
+        // Create a runnable to fetch actuator status
+        fetchStatusRunnable = new Runnable() {
+            @Override
+            public void run() {
+                fetchActuatorStatus(); // Call your method
+                handler.postDelayed(this, 1000); // Run every 60,000 milliseconds (1 minute)
+            }
+        };
+
+        // Start the first fetch immediately
+        handler.post(fetchStatusRunnable);
     }
 
     private void initViews() {
