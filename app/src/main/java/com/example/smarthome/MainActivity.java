@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.ToggleButton;
 import android.view.MotionEvent;
@@ -32,7 +33,9 @@ import retrofit2.http.Body;
 import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.converter.scalars.ScalarsConverterFactory;
+import com.github.mikephil.charting.components.LimitLine;
 
+import android.widget.SeekBar;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -40,12 +43,11 @@ public class MainActivity extends AppCompatActivity {
     private ToggleButton toggleAC, toggleLight, toggleLock, toggleBoiler;
     private TextView statusAC, statusLight, statusLock, statusBoiler;
 
-    // We'll track the "desired" set points for Temperature & Humidity
-    private float desiredTemp = 25f;    // example default
-    private float desiredHum = 50f;     // example default
-
-    // LimitLines for dragging
+    private SeekBar tempSeekBar, humSeekBar;
     private LimitLine tempLimitLine, humLimitLine;
+    private float desiredTemp = 25f;  // Default value for temperature
+    private float desiredHum = 50f;   // Default value for humidity
+
 
     // We’ll create a basic interface for our REST endpoints (similar to Django endpoints):
     interface ApiService {
@@ -147,6 +149,42 @@ public class MainActivity extends AppCompatActivity {
         toggleBoiler.setOnCheckedChangeListener((buttonView, isChecked) -> {
             updateActuator("heater_led", isChecked ? 1 : 0);
         });
+
+
+        // Set up SeekBars
+        tempSeekBar.setMax(40); // Max temperature = 40°C
+        tempSeekBar.setProgress((int) desiredTemp); // Set initial progress
+        tempSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                desiredTemp = progress;
+                updateLimitLine(desiredTemp, true);
+                updateSensorChoice(desiredTemp, desiredHum); // Update both values
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        humSeekBar.setMax(100); // Max humidity = 100%
+        humSeekBar.setProgress((int) desiredHum); // Set initial progress
+        humSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                desiredHum = progress;
+                updateLimitLine(desiredHum, false);
+                updateSensorChoice(desiredTemp, desiredHum); // Update both values
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
     }
 
     private void initViews() {
@@ -161,6 +199,9 @@ public class MainActivity extends AppCompatActivity {
         statusLight = findViewById(R.id.statusLight);
         statusLock = findViewById(R.id.statusLock);
         statusBoiler = findViewById(R.id.statusBoiler);
+
+        tempSeekBar = findViewById(R.id.tempSeekBar);
+        humSeekBar = findViewById(R.id.humSeekBar);
     }
 
     private void setupChart() {
@@ -208,7 +249,27 @@ public class MainActivity extends AppCompatActivity {
         humLimitLine.setTextColor(0xFFFF69B4);
     }
 
+    private void updateLimitLine(float value, boolean isTemp) {
+        // Create a new LimitLine with the updated value
+        LimitLine limitLine = new LimitLine(value);
 
+        // Optionally, set other properties like color, dashed line, etc.
+        limitLine.setLineWidth(2f);
+        limitLine.setLineColor(0xFFFF6347);  // For temperature (tomato color)
+        limitLine.enableDashedLine(10f, 10f, 0f);
+
+        if (isTemp) {
+            // If it's the temperature, update the LimitLine on the left Y-axis
+            lineChart.getAxisLeft().removeAllLimitLines();  // Remove all limit lines (or you can remove only tempLimitLine)
+            lineChart.getAxisLeft().addLimitLine(limitLine);
+        } else {
+            // If it's humidity, update the LimitLine on the right Y-axis
+            lineChart.getAxisRight().removeAllLimitLines(); // Remove all limit lines (or you can remove only humLimitLine)
+            lineChart.getAxisRight().addLimitLine(limitLine);
+        }
+
+        lineChart.invalidate(); // Refresh the chart
+    }
 
     // Networking Calls
     private void fetchSensorData() {
