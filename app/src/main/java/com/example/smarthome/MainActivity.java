@@ -246,7 +246,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 fetchActuatorStatus(); // Call your method
-                handler.postDelayed(this, 1000); // Run every 60,000 milliseconds (1 minute)
+                handler.postDelayed(this, 60000); // Run every 60,000 milliseconds (1 minute)
             }
         };
 
