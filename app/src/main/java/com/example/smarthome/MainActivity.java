@@ -42,22 +42,43 @@ import android.widget.SeekBar;
 
 public class MainActivity extends AppCompatActivity {
 
+    //클래스 변수선언 부
+    //라인차트
     private LineChart lineChart;
+
+    //토글버튼 (괜히 토글버튼으로 만들었음. 사용법은 일반버튼과 거의 동일)
+    //에어콘, 조명, 문잠금, 보일러 온 오프 버튼
     private ToggleButton toggleAC, toggleLight, toggleLock, toggleBoiler;
+
+    //일반버튼
+    //조명모드 세개(노멀, 시네마, 밀리터리)
     private Button  buttonNormal, buttonCinema, buttonMilitary;
+    //텍스트 상자(에어컨, 조명, 문잠금, 보일러 온오프 상태 보여주기 용)
     private TextView statusAC, statusLight, statusLock, statusBoiler;
 
+    //드래그 조절 바 세개  (온도, 습도, 조명밝기)
     private SeekBar tempSeekBar, humSeekBar, brightSeekBar;
+    //드래그 조절에 따라 그래프위에서 움직이는 라인 두개
     private LimitLine tempLimitLine, humLimitLine;
+
+    //온도, 습도, 밝기 기본값
     private float desiredTemp = 25f;  // Default value for temperature
     private float desiredHum = 50f;   // Default value for humidity
     private float desiredBright = 100f; // Default value for brightness
 
+    //쓰레드를 실행할때 사용되는 핸들러
     private Handler handler = new Handler(); // Declare a handler for posting tasks
+
+    //센서상태 상태가져오기 쓰레드
+    //왜 쓰레드를 사용하는가? 백그라운드에서 타이머에 따라 작동시키려고
     private Runnable fetchStatusRunnable; // Declare a runnable to hold the fetch status logic
 
 
-    // We’ll create a basic interface for our REST endpoints (similar to Django endpoints):
+    // REST API 선언: 장고에서 선언해 놓은 함수를 호출하기위해 날려주는 웹프로토콜이 REST API임
+    // 아래 함수들은 장고 싸이트 만들기 노트 참고
+    // 장고 함수 호출할때만 사용하는 것이 아니라 PHP호출 등 다른 명령어 날리기도 가능함.
+    // POST는 DB의 무언가를 바꿀때 흔히 사용되며
+    // GET은 DB의 무언가를 가져올때 흔히 사용됨
     interface ApiService {
         @GET("/get_last_60_sensor_data")
         Call<SensorDataResponse> getLast60SensorData();
@@ -73,12 +94,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // Example data models for JSON
+    // 센서(온습도)값 받아와서 저장할때 사용되는 클래스
     public static class SensorDataResponse {
         public List<Integer> labels;
         public List<Float> temperature;
         public List<Float> humidity;
     }
 
+    // ON/OFF 상태 받아와서 저장할때 사용되는 클래스
     public static class ActuatorStatusResponse {
         public String acStatus;      // e.g. "ON" or "OFF"
         public String lightStatus;   // e.g. "ON" or "OFF"
@@ -86,12 +109,13 @@ public class MainActivity extends AppCompatActivity {
         public String boilerStatus;  // e.g. "ON" or "OFF"
     }
 
+    // 받아올꺼 없을때 사용될 클래스
     public static class GenericResponse {
         public String status;
         public String message;
     }
 
-    // Request bodies
+    // 센서 제어 명령 보낼때 사용되는 클래스 (조명, 보일러, 에어컨, 문잠김 ON/OFF 명령 + 조명모드)
     public static class ActuatorUpdateBody {
         public Integer main_led;
         public Integer heater_led;
@@ -108,6 +132,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // 온습도, 밝기 값 보낼때 사용되는 클래스
     public static class SensorChoiceBody {
         public Float temperature_choice;
         public Float humidity_choice;
@@ -122,35 +147,42 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // Retrofit client
+    // REST API를 사용할때 필요한 클래스 변수 (Retrofit 라이브러리 설치 필요)
     private ApiService apiService;
 
+    // 이부분(onCreate)은 안드로이드 앱 시작되면 각종 전역변수들 선언되는 곳임
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        //activity_mail.xml을 보여주라는 명령어
         setContentView(R.layout.activity_main);
+
+        //activity_main안에 있는 모든 위젯들을 init 해주는 함수
         initViews();
 
-        // Setup OkHttpClient with timeout settings
+        // 인터넷 연결하는 내용같은데 나도 잘 모름
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)  // Adjust timeout if needed
                 .writeTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
                 .build();
 
-        // Setup Retrofit
+        // REST API 사용을 위한 Retrofit Init
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://smartHome.pababel.com/") // Adjust base URL as needed
-                .client(client)  // Attach the OkHttpClient for custom configurations
+                .baseUrl("") // 여기에 장고 웹사이트 주소를 입력하여 장고 웹사이트에서 만든 API를 불러올 수 있도록 한다
+                .client(client)
                 .addConverterFactory(GsonConverterFactory.create())  // Gson converter
                 .build();
         apiService = retrofit.create(ApiService.class);
 
-        setupChart();          // Initialize chart styling
-        fetchSensorData();     // Load initial graph data
-        startPeriodicFetch();
+
+        setupChart();          // 차트 설정들 불러오기
+        fetchSensorData();     // 최근 60분 센서 데이터 불러오기(온습도)
+        startPeriodicFetch();   //  1분에 한번씩 센서데이터(온습도) 추가
 //        fetchActuatorStatus(); // Load current actuator status
 
-        // Set toggle listeners
+        // 185~197번 라인은 에어컨, 조명, 문잠금, 보일러 on/off 버튼 클릭시 함수 지정 하는 코드
         toggleAC.setOnCheckedChangeListener((buttonView, isChecked) -> {
             updateActuator("fan", isChecked ? 1 : 0);
         });
@@ -164,11 +196,11 @@ public class MainActivity extends AppCompatActivity {
             updateActuator("heater_led", isChecked ? 1 : 0);
         });
 
-        // Set onClickListener for each button
+        // 199~220번 코드는 조명모드 3가지 버튼 각각 클릭시 호출할 함수 지정
         buttonNormal.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Handle buttonNormal click
+                // updateActuator 함수 호출
                 updateActuator("main_led_mode", 0);
             }
         });
@@ -176,19 +208,19 @@ public class MainActivity extends AppCompatActivity {
         buttonCinema.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Handle buttonCinema click
+                // updateActuator 함수 호출
                 updateActuator("main_led_mode", 1);            }
         });
 
         buttonMilitary.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Handle buttonMilitary click
+                // updateActuator 함수 호출
                 updateActuator("main_led_mode", 2);            }
         });
 
 
-        // Set up SeekBars
+        // 223~273번 라인은 온도/습도/밝기 조정 드래그바(seekbar)설정 및 값변시 함수호출 설정 해주는 코드
         tempSeekBar.setMax(40); // Max temperature = 40°C
         tempSeekBar.setProgress((int) desiredTemp); // Set initial progress
         tempSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -240,6 +272,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    //주기적으로 온습도 데이터 받아오기 함수를 호출하는 쓰레드 함수
     private void startPeriodicFetch() {
         // Create a runnable to fetch actuator status
         fetchStatusRunnable = new Runnable() {
@@ -254,6 +287,7 @@ public class MainActivity extends AppCompatActivity {
         handler.post(fetchStatusRunnable);
     }
 
+    //activity_main안에 있는 모든 위젯들을 init 해주는 함수
     private void initViews() {
         lineChart = findViewById(R.id.lineChart);
 
@@ -276,6 +310,7 @@ public class MainActivity extends AppCompatActivity {
         buttonMilitary = findViewById(R.id.buttonMilitary);
     }
 
+    //차트 스타일 설정 함수 (y axis, x axis 최소값 최대값 단위 등등)
     private void setupChart() {
         lineChart.getDescription().setEnabled(false);
         lineChart.setPinchZoom(true);
@@ -321,6 +356,7 @@ public class MainActivity extends AppCompatActivity {
         humLimitLine.setTextColor(0xFFFF69B4);
     }
 
+
     private void updateLimitLine(float value, boolean isTemp) {
         // Create a new LimitLine with the updated value
         LimitLine limitLine = new LimitLine(value);
@@ -364,6 +400,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    //그래프 그리기 또는 다시 그리기
     private void updateChart(List<Integer> xLabels, List<Float> tempVals, List<Float> humVals) {
         List<Entry> tempEntries = new ArrayList<>();
         List<Entry> humEntries = new ArrayList<>();
@@ -393,6 +430,8 @@ public class MainActivity extends AppCompatActivity {
         lineChart.setData(lineData);
         lineChart.invalidate();
     }
+
+    //온습도 데이터 받아오기 함수
     private void fetchActuatorStatus() {
         Call<ActuatorStatusResponse> call = apiService.getActuatorStatus();
         call.enqueue(new Callback<ActuatorStatusResponse>() {
@@ -417,8 +456,11 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    //DB의 ON/OFF 및 조명 모드값 변경 api 호출 함수
     private void updateActuator(String field, int value) {
         ActuatorUpdateBody body = new ActuatorUpdateBody(null, null, null, null, null);
+
+        //각각의 on/off 버튼이 눌러질 때 어떤 버튼이 눌러졌는지 구분하는 case문
         switch(field) {
             case "main_led":
                 body.main_led = value;
@@ -437,6 +479,7 @@ public class MainActivity extends AppCompatActivity {
                 break;
         }
 
+        //DB의 ON/OFF 및 조명 모드값 변경 api 호출 라인
         Call<GenericResponse> call = apiService.updateActuator(body);
         call.enqueue(new Callback<GenericResponse>() {
             @Override
@@ -455,6 +498,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    //DB의 온습도값 변경 api 호출 함수
     private void updateSensorChoice(Float temp, Float hum, Float bright) {
         SensorChoiceBody body = new SensorChoiceBody(temp, hum, bright);
         Call<GenericResponse> call = apiService.updateSensorChoice(body);
